@@ -44,5 +44,5 @@ Try Bootcamp now at [http://trybootcamp.vitorfs.com][2].
 
 [0]: https://www.python.org/
 [1]: https://www.djangoproject.com/
-[2]: http://trybootcamp.vitorfs.com/
+[2]: http://someurl.com
 [3]: https://github.com/vitorfs/bootcamp/wiki/Installing-and-Running-Bootcamp
