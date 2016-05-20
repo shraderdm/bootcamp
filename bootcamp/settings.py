@@ -4,21 +4,31 @@ PROJECT_DIR = Path(__file__).parent
 from decouple import config
 
 import dj_database_url
+import os
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = os.getenv('SECRET_KEY','default_val')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 TEMPLATE_DEBUG = DEBUG
 
+# DATABASES = {
+#    'default': dj_database_url.config(
+#      default = 'postgres://' + os.getenv('DATABASE_USER') + ':' + os.getenv('DATABASE_PASSWORD') + '@postgresql:5432/bootcamp'
+#    )
+#}
+
+from . import database
+
 DATABASES = {
-    'default': dj_database_url.config(
-      default = config('DATABASE_URL'))
+    'default': database.config()
 }
 
 ALLOWED_HOSTS = ['*']
@@ -101,4 +111,4 @@ LOGIN_REDIRECT_URL = '/feeds/'
 ALLOWED_SIGNUP_DOMAINS = ['*']
 
 FILE_UPLOAD_TEMP_DIR = '/tmp/'
-FILE_UPLOAD_PERMISSIONS = 0644
+FILE_UPLOAD_PERMISSIONS = 644
