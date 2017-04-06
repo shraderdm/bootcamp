@@ -1,8 +1,14 @@
-from django.db import models
-from django.contrib.auth.models import User
-from bootcamp.activities.models import Activity
-import markdown
+from __future__ import unicode_literals
 
+from django.contrib.auth.models import User
+from django.db import models
+from django.utils.encoding import python_2_unicode_compatible
+
+import markdown
+from bootcamp.activities.models import Activity
+
+
+@python_2_unicode_compatible
 class Question(models.Model):
     user = models.ForeignKey(User)
     title = models.CharField(max_length=255)
@@ -11,13 +17,13 @@ class Question(models.Model):
     update_date = models.DateTimeField(auto_now_add=True)
     favorites = models.IntegerField(default=0)
     has_accepted_answer = models.BooleanField(default=False)
-    
+
     class Meta:
         verbose_name = 'Question'
         verbose_name_plural = 'Questions'
         ordering = ('-update_date',)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.title
 
     @staticmethod
@@ -42,21 +48,24 @@ class Question(models.Model):
 
     def get_description_preview(self):
         if len(self.description) > 255:
-            return u'{0}...'.format(self.description[:255])
+            return '{0}...'.format(self.description[:255])
         else:
             return self.description
 
     def get_description_preview_as_markdown(self):
-        return markdown.markdown(self.get_description_preview(), safe_mode='escape')
+        return markdown.markdown(self.get_description_preview(),
+                                 safe_mode='escape')
 
     def calculate_favorites(self):
-        favorites = Activity.objects.filter(activity_type=Activity.FAVORITE, question=self.pk).count()
+        favorites = Activity.objects.filter(activity_type=Activity.FAVORITE,
+                                            question=self.pk).count()
         self.favorites = favorites
         self.save()
         return self.favorites
 
     def get_favoriters(self):
-        favorites = Activity.objects.filter(activity_type=Activity.FAVORITE, question=self.pk)
+        favorites = Activity.objects.filter(activity_type=Activity.FAVORITE,
+                                            question=self.pk)
         favoriters = []
         for favorite in favorites:
             favoriters.append(favorite.user)
@@ -66,12 +75,14 @@ class Question(models.Model):
         tags = tags.strip()
         tag_list = tags.split(' ')
         for tag in tag_list:
-            t, created = Tag.objects.get_or_create(tag=tag.lower(), question=self)
+            t, created = Tag.objects.get_or_create(tag=tag.lower(),
+                                                   question=self)
 
     def get_tags(self):
         return Tag.objects.filter(question=self)
 
 
+@python_2_unicode_compatible
 class Answer(models.Model):
     user = models.ForeignKey(User)
     question = models.ForeignKey(Question)
@@ -80,13 +91,13 @@ class Answer(models.Model):
     update_date = models.DateTimeField(null=True, blank=True)
     votes = models.IntegerField(default=0)
     is_accepted = models.BooleanField(default=False)
-    
+
     class Meta:
         verbose_name = 'Answer'
         verbose_name_plural = 'Answers'
         ordering = ('-is_accepted', '-votes', 'create_date',)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.description
 
     def accept(self):
@@ -100,21 +111,25 @@ class Answer(models.Model):
         self.question.save()
 
     def calculate_votes(self):
-        up_votes = Activity.objects.filter(activity_type=Activity.UP_VOTE, answer=self.pk).count()
-        down_votes = Activity.objects.filter(activity_type=Activity.DOWN_VOTE, answer=self.pk).count()
+        up_votes = Activity.objects.filter(activity_type=Activity.UP_VOTE,
+                                           answer=self.pk).count()
+        down_votes = Activity.objects.filter(activity_type=Activity.DOWN_VOTE,
+                                             answer=self.pk).count()
         self.votes = up_votes - down_votes
         self.save()
         return self.votes
 
     def get_up_voters(self):
-        votes = Activity.objects.filter(activity_type=Activity.UP_VOTE, answer=self.pk)
+        votes = Activity.objects.filter(activity_type=Activity.UP_VOTE,
+                                        answer=self.pk)
         voters = []
         for vote in votes:
             voters.append(vote.user)
         return voters
 
     def get_down_voters(self):
-        votes = Activity.objects.filter(activity_type=Activity.DOWN_VOTE, answer=self.pk)
+        votes = Activity.objects.filter(activity_type=Activity.DOWN_VOTE,
+                                        answer=self.pk)
         voters = []
         for vote in votes:
             voters.append(vote.user)
@@ -124,6 +139,7 @@ class Answer(models.Model):
         return markdown.markdown(self.description, safe_mode='escape')
 
 
+@python_2_unicode_compatible
 class Tag(models.Model):
     tag = models.CharField(max_length=50)
     question = models.ForeignKey(Question)
@@ -132,7 +148,7 @@ class Tag(models.Model):
         verbose_name = 'Tag'
         verbose_name_plural = 'Tags'
         unique_together = (('tag', 'question'),)
-        index_together = [['tag', 'question'],]
-    
-    def __unicode__(self):
+        index_together = [['tag', 'question'], ]
+
+    def __str__(self):
         return self.tag

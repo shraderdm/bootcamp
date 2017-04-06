@@ -1,13 +1,14 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponseForbidden, HttpResponseBadRequest, HttpResponse
-from bootcamp.articles.models import Article, Tag, ArticleComment
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from bootcamp.articles.forms import ArticleForm
-from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
-from bootcamp.decorators import ajax_required
-import markdown
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.http import HttpResponse, HttpResponseBadRequest
+from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
+
+import markdown
+from bootcamp.articles.forms import ArticleForm
+from bootcamp.articles.models import Article, ArticleComment, Tag
+from bootcamp.decorators import ajax_required
+
 
 def _articles(request, articles):
     paginator = Paginator(articles, 10)
@@ -24,15 +25,18 @@ def _articles(request, articles):
         'popular_tags': popular_tags
     })
 
+
 @login_required
 def articles(request):
     all_articles = Article.get_published()
     return _articles(request, all_articles)
 
+
 @login_required
 def article(request, slug):
     article = get_object_or_404(Article, slug=slug, status=Article.PUBLISHED)
     return render(request, 'articles/article.html', {'article': article})
+
 
 @login_required
 def tag(request, tag_name):
@@ -42,6 +46,7 @@ def tag(request, tag_name):
         if tag.article.status == Article.PUBLISHED:
             articles.append(tag.article)
     return _articles(request, articles)
+
 
 @login_required
 def write(request):
@@ -63,10 +68,13 @@ def write(request):
         form = ArticleForm()
     return render(request, 'articles/write.html', {'form': form})
 
+
 @login_required
 def drafts(request):
-    drafts = Article.objects.filter(create_user=request.user, status=Article.DRAFT)
+    drafts = Article.objects.filter(create_user=request.user,
+                                    status=Article.DRAFT)
     return render(request, 'articles/drafts.html', {'drafts': drafts})
+
 
 @login_required
 def edit(request, id):
@@ -74,7 +82,7 @@ def edit(request, id):
     if id:
         article = get_object_or_404(Article, pk=id)
         for tag in article.get_tags():
-            tags = u'{0} {1}'.format(tags, tag.tag)
+            tags = '{0} {1}'.format(tags, tag.tag)
         tags = tags.strip()
     else:
         article = Article(create_user=request.user)
@@ -104,8 +112,10 @@ def preview(request):
             return HttpResponse(html)
         else:
             return HttpResponseBadRequest()
-    except Exception, e:
+
+    except Exception:
         return HttpResponseBadRequest()
+
 
 @login_required
 @ajax_required
@@ -117,13 +127,20 @@ def comment(request):
             comment = request.POST.get('comment')
             comment = comment.strip()
             if len(comment) > 0:
-                article_comment = ArticleComment(user=request.user, article=article, comment=comment)
+                article_comment = ArticleComment(user=request.user,
+                                                 article=article,
+                                                 comment=comment)
                 article_comment.save()
-            html = u''
+            html = ''
             for comment in article.get_comments():
-                html = u'{0}{1}'.format(html, render_to_string('articles/partial_article_comment.html', {'comment': comment}))
+                html = '{0}{1}'.format(html, render_to_string(
+                    'articles/partial_article_comment.html',
+                    {'comment': comment}))
+
             return HttpResponse(html)
+
         else:
             return HttpResponseBadRequest()
-    except Exception, e:
+
+    except Exception:
         return HttpResponseBadRequest()

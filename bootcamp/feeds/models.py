@@ -1,11 +1,16 @@
-from django.db import models
-from django.utils.translation import ugettext_lazy as _
+from __future__ import unicode_literals
+
 from django.contrib.auth.models import User
-from bootcamp.activities.models import Activity
+from django.db import models
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.html import escape
+from django.utils.translation import ugettext_lazy as _
+
 import bleach
+from bootcamp.activities.models import Activity
 
 
+@python_2_unicode_compatible
 class Feed(models.Model):
     user = models.ForeignKey(User)
     date = models.DateTimeField(auto_now_add=True)
@@ -19,7 +24,7 @@ class Feed(models.Model):
         verbose_name_plural = _('Feeds')
         ordering = ('-date',)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.post
 
     @staticmethod
@@ -39,13 +44,15 @@ class Feed(models.Model):
         return Feed.objects.filter(parent=self).order_by('date')
 
     def calculate_likes(self):
-        likes = Activity.objects.filter(activity_type=Activity.LIKE, feed=self.pk).count()
+        likes = Activity.objects.filter(activity_type=Activity.LIKE,
+                                        feed=self.pk).count()
         self.likes = likes
         self.save()
         return self.likes
 
     def get_likes(self):
-        likes = Activity.objects.filter(activity_type=Activity.LIKE, feed=self.pk)
+        likes = Activity.objects.filter(activity_type=Activity.LIKE,
+                                        feed=self.pk)
         return likes
 
     def get_likers(self):

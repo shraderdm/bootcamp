@@ -1,15 +1,19 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
-from bootcamp.feeds.models import Feed
-from bootcamp.activities.models import Activity, Notification
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.template.loader import render_to_string
-from django.template.context_processors import csrf
 import json
+
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.http import (HttpResponse, HttpResponseBadRequest,
+                         HttpResponseForbidden)
+from django.shortcuts import get_object_or_404, render
+from django.template.context_processors import csrf
+from django.template.loader import render_to_string
+
+from bootcamp.activities.models import Activity
 from bootcamp.decorators import ajax_required
+from bootcamp.feeds.models import Feed
 
 FEEDS_NUM_PAGES = 10
+
 
 @login_required
 def feeds(request):
@@ -21,13 +25,15 @@ def feeds(request):
         from_feed = feeds[0].id
     return render(request, 'feeds/feeds.html', {
         'feeds': feeds,
-        'from_feed': from_feed, 
+        'from_feed': from_feed,
         'page': 1,
         })
+
 
 def feed(request, pk):
     feed = get_object_or_404(Feed, pk=pk)
     return render(request, 'feeds/feed.html', {'feed': feed})
+
 
 @login_required
 @ajax_required
@@ -45,39 +51,46 @@ def load(request):
         return HttpResponseBadRequest()
     except EmptyPage:
         feeds = []
-    html = u''
-    csrf_token = unicode(csrf(request)['csrf_token'])
+    html = ''
+    csrf_token = (csrf(request)['csrf_token'])
     for feed in feeds:
-        html = u'{0}{1}'.format(html, render_to_string('feeds/partial_feed.html', {
-            'feed': feed,
-            'user': request.user,
-            'csrf_token': csrf_token
-            })
-        )
+        html = '{0}{1}'.format(html,
+                               render_to_string('feeds/partial_feed.html',
+                                                {
+                                                    'feed': feed,
+                                                    'user': request.user,
+                                                    'csrf_token': csrf_token
+                                                    }))
+
     return HttpResponse(html)
+
 
 def _html_feeds(last_feed, user, csrf_token, feed_source='all'):
     feeds = Feed.get_feeds_after(last_feed)
     if feed_source != 'all':
         feeds = feeds.filter(user__id=feed_source)
-    html = u''
+    html = ''
     for feed in feeds:
-        html = u'{0}{1}'.format(html, render_to_string('feeds/partial_feed.html', {
-            'feed': feed,
-            'user': user,
-            'csrf_token': csrf_token
-            })
-        )
+        html = '{0}{1}'.format(html,
+                               render_to_string('feeds/partial_feed.html',
+                                                {
+                                                    'feed': feed,
+                                                    'user': user,
+                                                    'csrf_token': csrf_token
+                                                    }))
+
     return html
+
 
 @login_required
 @ajax_required
 def load_new(request):
     last_feed = request.GET.get('last_feed')
     user = request.user
-    csrf_token = unicode(csrf(request)['csrf_token'])
+    csrf_token = (csrf(request)['csrf_token'])
     html = _html_feeds(last_feed, user, csrf_token)
     return HttpResponse(html)
+
 
 @login_required
 @ajax_required
@@ -90,12 +103,13 @@ def check(request):
     count = feeds.count()
     return HttpResponse(count)
 
+
 @login_required
 @ajax_required
 def post(request):
     last_feed = request.POST.get('last_feed')
     user = request.user
-    csrf_token = unicode(csrf(request)['csrf_token'])
+    csrf_token = (csrf(request)['csrf_token'])
     feed = Feed()
     feed.user = user
     post = request.POST['post']
@@ -106,21 +120,26 @@ def post(request):
     html = _html_feeds(last_feed, user, csrf_token)
     return HttpResponse(html)
 
+
 @login_required
 @ajax_required
 def like(request):
     feed_id = request.POST['feed']
     feed = Feed.objects.get(pk=feed_id)
     user = request.user
-    like = Activity.objects.filter(activity_type=Activity.LIKE, feed=feed_id, user=user)
+    like = Activity.objects.filter(activity_type=Activity.LIKE, feed=feed_id,
+                                   user=user)
     if like:
         user.profile.unotify_liked(feed)
         like.delete()
+
     else:
         like = Activity(activity_type=Activity.LIKE, feed=feed_id, user=user)
         like.save()
         user.profile.notify_liked(feed)
+
     return HttpResponse(feed.calculate_likes())
+
 
 @login_required
 @ajax_required
@@ -136,11 +155,15 @@ def comment(request):
             feed.comment(user=user, post=post)
             user.profile.notify_commented(feed)
             user.profile.notify_also_commented(feed)
-        return render(request, 'feeds/partial_feed_comments.html', {'feed': feed})
+        return render(request, 'feeds/partial_feed_comments.html',
+                      {'feed': feed})
+
     else:
         feed_id = request.GET.get('feed')
         feed = Feed.objects.get(pk=feed_id)
-        return render(request, 'feeds/partial_feed_comments.html', {'feed': feed})
+        return render(request, 'feeds/partial_feed_comments.html',
+                      {'feed': feed})
+
 
 @login_required
 @ajax_required
@@ -157,12 +180,14 @@ def update(request):
     data = json.dumps(dump)
     return HttpResponse(data, content_type='application/json')
 
+
 @login_required
 @ajax_required
 def track_comments(request):
     feed_id = request.GET.get('feed')
     feed = Feed.objects.get(pk=feed_id)
     return render(request, 'feeds/partial_feed_comments.html', {'feed': feed})
+
 
 @login_required
 @ajax_required
@@ -181,5 +206,5 @@ def remove(request):
             return HttpResponse()
         else:
             return HttpResponseForbidden()
-    except Exception, e:
+    except Exception:
         return HttpResponseBadRequest()
